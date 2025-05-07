@@ -41,7 +41,9 @@
 
             console.log("🔄 Auto re-subscribed to MQTT topics!");
         });
-
+client.on('message', (topic, message) => {
+    console.log(`📩 Phản hồi từ MQTT: ${topic} → ${message.toString()}`);
+});
         // 🔹 Gửi MQTT với retain để giữ trạng thái
         function sendMQTT(topic, message, retain = false) {
             client.publish(topic, message, { retain });
