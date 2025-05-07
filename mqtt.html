@@ -14,44 +14,50 @@
     <button onclick="sendMQTT('device/door', '0')">🔒 Đóng cửa</button>
 
     <h3>Dữ liệu cảm biến:</h3>
-    <p id="temp">🌡️ Nhiệt độ: </p>
-    <p id="humidity">💧 Độ ẩm: </p>
-    <p id="gas">🔥 Khí gas: </p>
+    <p id="temp">🌡️ Nhiệt độ: Đang cập nhật...</p>
+    <p id="humidity">💧 Độ ẩm: Đang cập nhật...</p>
+    <p id="gas">🔥 Khí gas: Đang cập nhật...</p>
     <p id="relayStatus">⚡ Relay: Đang cập nhật...</p>
     <p id="doorStatus">🚪 Cửa: Đang cập nhật...</p>
 
     <script>
+        // 🔹 Kết nối MQTT WebSockets
         const client = mqtt.connect('wss://6c419c1bacbf4ab783d8c915942de84b.s1.eu.hivemq.cloud:8884/mqtt', {
             username: "QuangTruc0210",
             password: "Truc@2003"
         });
-client.on('connect', () => {
-    console.log("✅ WebSocket MQTT Connected!");
 
-    // 🔥 Subscribe lại khi kết nối
-    const topics = ["sensor/temp", "sensor/humidity", "sensor/gas", "device/relay", "device/door"];
-    topics.forEach(topic => client.subscribe(topic));
-    
-    console.log("🔄 Auto re-subscribed to MQTT topics!");
-});
         client.on('connect', () => {
-            client.subscribe('sensor/temp');
-            client.subscribe('sensor/humidity');
-            client.subscribe('sensor/gas');
-            client.subscribe('device/relay');
-            client.subscribe('device/door');
+            console.log("✅ WebSocket MQTT Connected!");
+
+            // 🔥 Auto re-subscribe các topic sau khi mất kết nối
+            const topics = ["sensor/temp", "sensor/humidity", "sensor/gas", "device/relay", "device/door"];
+            topics.forEach(topic => client.subscribe(topic));
+
+            console.log("🔄 Auto re-subscribed to MQTT topics!");
         });
 
+        // 🔹 Gửi MQTT từ AI2
         function sendMQTT(topic, message) {
             client.publish(topic, message);
+            console.log(`📡 Sent MQTT: ${topic} → ${message}`);
         }
 
+        // 🔹 Nhận dữ liệu từ MQTT & cập nhật giao diện
         client.on('message', (topic, message) => {
+            console.log(`🔥 Received MQTT: ${topic} → ${message.toString()}`);
+
             if (topic === "sensor/temp") document.getElementById("temp").innerText = `🌡️ Nhiệt độ: ${message}`;
             if (topic === "sensor/humidity") document.getElementById("humidity").innerText = `💧 Độ ẩm: ${message}`;
             if (topic === "sensor/gas") document.getElementById("gas").innerText = `🔥 Khí gas: ${message}`;
             if (topic === "device/relay") document.getElementById("relayStatus").innerText = (message.toString() === "1") ? "🔌 Relay đang bật!" : "⚫ Relay đã tắt!";
             if (topic === "device/door") document.getElementById("doorStatus").innerText = (message.toString() === "1") ? "🚪 Cửa đang mở!" : "🔒 Cửa đã đóng!";
+        });
+
+        // 🔥 Kiểm tra mất kết nối & tự động reconnect
+        client.on('close', () => {
+            console.log("🔴 MQTT Disconnected! Retrying...");
+            setTimeout(() => client.reconnect(), 5000);
         });
     </script>
 </body>
