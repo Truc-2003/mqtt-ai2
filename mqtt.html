@@ -7,11 +7,11 @@
 <body>
     <h2>MQTT WebSockets AI2</h2>
 
-    <button onclick="sendMQTT('device/relay', '1')">🔌 Bật Relay</button>
-    <button onclick="sendMQTT('device/relay', '0')">⚫ Tắt Relay</button>
+    <button onclick="sendMQTT('device/relay', '1', true)">🔌 Bật Relay</button>
+    <button onclick="sendMQTT('device/relay', '0', true)">⚫ Tắt Relay</button>
 
-    <button onclick="sendMQTT('device/door', '1')">🚪 Mở cửa</button>
-    <button onclick="sendMQTT('device/door', '0')">🔒 Đóng cửa</button>
+    <button onclick="sendMQTT('device/door', '1', true)">🚪 Mở cửa</button>
+    <button onclick="sendMQTT('device/door', '0', true)">🔒 Đóng cửa</button>
 
     <h3>Dữ liệu cảm biến:</h3>
     <p id="temp">🌡️ Nhiệt độ: Đang cập nhật...</p>
@@ -21,12 +21,17 @@
     <p id="doorStatus">🚪 Cửa: Đang cập nhật...</p>
 
     <script>
+        // 🔹 Lấy thông tin đăng nhập từ localStorage
+        const mqttUser = localStorage.getItem("mqtt_username") || "QuangTruc0210";
+        const mqttPassword = localStorage.getItem("mqtt_password") || "Truc@2003";
+
         // 🔹 Kết nối MQTT WebSockets
         const client = mqtt.connect('wss://6c419c1bacbf4ab783d8c915942de84b.s1.eu.hivemq.cloud:8884/mqtt', {
-            username: "QuangTruc0210",
-            password: "Truc@2003"
+            username: mqttUser,
+            password: mqttPassword
         });
 
+        // 🔹 Khi kết nối thành công
         client.on('connect', () => {
             console.log("✅ WebSocket MQTT Connected!");
 
@@ -37,9 +42,9 @@
             console.log("🔄 Auto re-subscribed to MQTT topics!");
         });
 
-        // 🔹 Gửi MQTT từ AI2
-        function sendMQTT(topic, message) {
-            client.publish(topic, message);
+        // 🔹 Gửi MQTT với retain để giữ trạng thái
+        function sendMQTT(topic, message, retain = false) {
+            client.publish(topic, message, { retain });
             console.log(`📡 Sent MQTT: ${topic} → ${message}`);
         }
 
@@ -59,6 +64,22 @@
             console.log("🔴 MQTT Disconnected! Retrying...");
             setTimeout(() => client.reconnect(), 5000);
         });
+
+        // 🔥 Kiểm tra lỗi kết nối MQTT
+        client.on('error', (error) => {
+            console.error("❌ MQTT Connection Error:", error);
+        });
+
+        // 🔹 Lưu thông tin đăng nhập sau khi kết nối thành công
+        client.on('connect', () => {
+            localStorage.setItem("mqtt_username", mqttUser);
+            localStorage.setItem("mqtt_password", mqttPassword);
+        });
+
+        // 🔹 Tự động kết nối MQTT sau khi refresh
+        window.onload = function() {
+            client.reconnect();
+        };
     </script>
 </body>
 </html>
