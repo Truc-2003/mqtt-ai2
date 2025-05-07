@@ -25,7 +25,15 @@
             username: "QuangTruc0210",
             password: "Truc@2003"
         });
+client.on('connect', () => {
+    console.log("✅ WebSocket MQTT Connected!");
 
+    // 🔥 Subscribe lại khi kết nối
+    const topics = ["sensor/temp", "sensor/humidity", "sensor/gas", "device/relay", "device/door"];
+    topics.forEach(topic => client.subscribe(topic));
+    
+    console.log("🔄 Auto re-subscribed to MQTT topics!");
+});
         client.on('connect', () => {
             client.subscribe('sensor/temp');
             client.subscribe('sensor/humidity');
